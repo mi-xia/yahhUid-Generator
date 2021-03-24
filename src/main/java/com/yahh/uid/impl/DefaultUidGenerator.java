@@ -2,11 +2,10 @@ package com.yahh.uid.impl;
 
 import com.yahh.uid.UidGenerator;
 import com.yahh.uid.exception.YahhUIDException;
-import com.yahh.uid.worker.BitsAllocator;
+import com.yahh.uid.utils.DateUtils;
+import com.yahh.uid.BitsAllocator;
 import com.yahh.uid.worker.WorkerIdAssigner;
-import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.util.Date;
@@ -132,5 +131,85 @@ public class DefaultUidGenerator implements UidGenerator, InitializingBean {
         }
 
         log.info("Initialized bits(1, {}, {}, {}) for workerID:{}", timeBits, workerIdBits, seqBits, workerId);
+    }
+
+    public int getTimeBits() {
+        return timeBits;
+    }
+
+    public void setTimeBits(int timeBits) {
+        this.timeBits = timeBits;
+    }
+
+    public int getWorkerIdBits() {
+        return workerIdBits;
+    }
+
+    public void setWorkerIdBits(int workerIdBits) {
+        this.workerIdBits = workerIdBits;
+    }
+
+    public int getSeqBits() {
+        return seqBits;
+    }
+
+    public void setSeqBits(int seqBits) {
+        this.seqBits = seqBits;
+    }
+
+    public String getEpochStr() {
+        return epochStr;
+    }
+
+    public void setEpochStr(String epochStr) {
+        this.epochStr = epochStr;
+    }
+
+    public Long getEpochSeconds() {
+        return epochSeconds;
+    }
+
+    public void setEpochSeconds(Long epochSeconds) {
+        this.epochSeconds = epochSeconds;
+    }
+
+    public BitsAllocator getBitsAllocator() {
+        return bitsAllocator;
+    }
+
+    public void setBitsAllocator(BitsAllocator bitsAllocator) {
+        this.bitsAllocator = bitsAllocator;
+    }
+
+    public Long getWorkerId() {
+        return workerId;
+    }
+
+    public void setWorkerId(Long workerId) {
+        this.workerId = workerId;
+    }
+
+    public long getSequence() {
+        return sequence;
+    }
+
+    public void setSequence(long sequence) {
+        this.sequence = sequence;
+    }
+
+    public long getLastSecond() {
+        return lastSecond;
+    }
+
+    public void setLastSecond(long lastSecond) {
+        this.lastSecond = lastSecond;
+    }
+
+    public WorkerIdAssigner getWorkerIdAssigner() {
+        return workerIdAssigner;
+    }
+
+    public void setWorkerIdAssigner(WorkerIdAssigner workerIdAssigner) {
+        this.workerIdAssigner = workerIdAssigner;
     }
 }
