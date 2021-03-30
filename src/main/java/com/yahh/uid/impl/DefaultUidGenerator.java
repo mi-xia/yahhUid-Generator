@@ -1,11 +1,14 @@
 package com.yahh.uid.impl;
 
 import com.yahh.uid.UidGenerator;
+import com.yahh.uid.buffer.RingBuffer;
 import com.yahh.uid.exception.YahhUIDException;
 import com.yahh.uid.utils.DateUtils;
 import com.yahh.uid.BitsAllocator;
 import com.yahh.uid.worker.WorkerIdAssigner;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.util.Date;
@@ -17,23 +20,24 @@ import java.util.concurrent.TimeUnit;
  * @description:
  * @date 2021/3/14 18:57
  */
-@Slf4j
 public class DefaultUidGenerator implements UidGenerator, InitializingBean {
 
-    private int timeBits = 28;
-    private int workerIdBits = 22;
-    private int seqBits = 13;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultUidGenerator.class);
 
-    private String epochStr = "2021-03-01";
-    private Long epochSeconds = TimeUnit.MILLISECONDS.toSeconds(1614528000000L);
+    protected int timeBits = 28;
+    protected int workerIdBits = 22;
+    protected int seqBits = 13;
 
-    private BitsAllocator bitsAllocator;
-    private Long workerId;
+    protected String epochStr = "2021-03-01";
+    protected Long epochSeconds = TimeUnit.MILLISECONDS.toSeconds(1614528000000L);
+
+    protected BitsAllocator bitsAllocator;
+    protected Long workerId;
 
     protected long sequence = 0L;
     protected long lastSecond = -1L;
 
-    private WorkerIdAssigner workerIdAssigner;
+    protected WorkerIdAssigner workerIdAssigner;
 
     @Override
     public long getUID() throws YahhUIDException {
@@ -41,7 +45,7 @@ public class DefaultUidGenerator implements UidGenerator, InitializingBean {
         try {
             return this.nextId();
         } catch (Exception e){
-            log.error("Generate unique id exception. ", e);
+            LOGGER.error("Generate unique id exception. ", e);
             throw new YahhUIDException(e);
         }
     }
@@ -130,7 +134,7 @@ public class DefaultUidGenerator implements UidGenerator, InitializingBean {
             throw new RuntimeException("Worker id " + workerId + " exceeds the max " + bitsAllocator.getMaxWorkerId());
         }
 
-        log.info("Initialized bits(1, {}, {}, {}) for workerID:{}", timeBits, workerIdBits, seqBits, workerId);
+        LOGGER.info("Initialized bits(1, {}, {}, {}) for workerID:{}", timeBits, workerIdBits, seqBits, workerId);
     }
 
     public int getTimeBits() {

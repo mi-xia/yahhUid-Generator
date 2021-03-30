@@ -2,11 +2,11 @@ package com.yahh.uid.worker;
 
 import com.yahh.uid.utils.DockerUtils;
 import com.yahh.uid.utils.NetUtils;
-import com.yahh.uid.worker.WorkerIdAssigner;
 import com.yahh.uid.worker.dao.WorkerNodeDAO;
 import com.yahh.uid.worker.entity.WorkerNodeEntity;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.math.RandomUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,21 +16,22 @@ import org.springframework.transaction.annotation.Transactional;
  * @description:
  * @date 2021/3/14 18:19
  */
-@Slf4j
 public class DisposableWorkerIdAssigner implements WorkerIdAssigner {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DisposableWorkerIdAssigner.class);
 
     @Autowired
     private WorkerNodeDAO workerNodeDAO;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public long assignWorkerId() {
 
         WorkerNodeEntity workerNodeEntity = this.buildWorkerNode();
 
         workerNodeDAO.addWorkerNode(workerNodeEntity);
 
-        log.info("Add worker node: " + workerNodeEntity);
+        LOGGER.info("Add worker node: " + workerNodeEntity);
 
         return workerNodeEntity.getId();
     }

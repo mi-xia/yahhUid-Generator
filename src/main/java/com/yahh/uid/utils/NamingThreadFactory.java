@@ -3,6 +3,8 @@ package com.yahh.uid.utils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.ClassUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadFactory;
@@ -14,8 +16,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * @description: 自定义一个线程工厂
  * @date 2021/3/21 23:10
  */
-@Slf4j
 public class NamingThreadFactory implements ThreadFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NamingThreadFactory.class);
 
     /**
      * 线程名称
@@ -62,7 +65,7 @@ public class NamingThreadFactory implements ThreadFactory {
             thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                 @Override
                 public void uncaughtException(Thread t, Throwable e) {
-                    log.error("unhandled exception in thread: " + t.getId() + ":" + t.getName(), e);
+                    LOGGER.error("unhandled exception in thread: " + t.getId() + ":" + t.getName(), e);
                 }
             });
         }

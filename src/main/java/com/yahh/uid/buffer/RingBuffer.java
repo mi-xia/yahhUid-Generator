@@ -3,6 +3,8 @@ package com.yahh.uid.buffer;
 import com.yahh.uid.utils.PaddedAtomicLong;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -13,14 +15,14 @@ import java.util.concurrent.atomic.AtomicLong;
  * @description:
  * @date 2021/3/21 17:48
  */
-@Slf4j
 public class RingBuffer {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(RingBuffer.class);
 
     private static final int START_POINT = -1;
     private static final long CAN_PUT_FLAG = 0L;
     private static final long CAN_TAKE_FLAG = 1L;
-    private static final int DEFAULT_PADDING_PERCENT = 50;
+    public static final int DEFAULT_PADDING_PERCENT = 50;
 
     private final int bufferSize;
     private final long indexMask;
@@ -85,7 +87,6 @@ public class RingBuffer {
             rejectedPutBufferHandler.rejectPutBuffer(this,uid);
             return false;
         }
-
         /**
          * 首先往slots中放入uid
          */
@@ -100,6 +101,40 @@ public class RingBuffer {
         tail.incrementAndGet();
 
         return true;
+    }
+
+
+    public long take() {
+        // 获取当前消费的节点
+        long currentCursor = cursor.get();
+        long nextCursor = cursor.updateAndGet(old -> old == tail.get() ? old : old + 1);
+
+        // 判断下一个要消费的节点要大于等于已经消费过的节点
+        Assert.isTrue(nextCursor >= currentCursor, "Curosr can't move back");
+
+        // 如果剩余可消费 slot 小于 paddingThreshold，则进行异步填充
+        long currentTail = tail.get();
+        if (currentTail - currentCursor < paddingThreshold) {
+            LOGGER.info("Reach the padding threshold:{}. tail:{}, cursor:{}, rest:{}", paddingThreshold, currentTail,
+                    nextCursor, currentTail - nextCursor);
+            bufferPaddingExecutor.asyncPadding();
+        }
+
+        if (nextCursor == currentCursor) {
+            // 说明已经消费到了最后
+            rejectedTakeBufferHandler.rejectTakeBuffer(this);
+        }
+
+        int nextCursorIndex = calSlotIndex(nextCursor);
+        Assert.isTrue(flags[nextCursorIndex].get() == CAN_TAKE_FLAG, "Curosr not in can take status");
+
+        /**
+         * 到这里就可以真正的取出id了
+         */
+        long uid = slots[nextCursorIndex];
+        flags[nextCursorIndex].set(CAN_PUT_FLAG);
+
+        return uid;
     }
 
 
@@ -125,14 +160,14 @@ public class RingBuffer {
      * Discard policy for {@link RejectedPutBufferHandler}, we just do logging
      */
     protected void discardPutBuffer(RingBuffer ringBuffer, long uid) {
-        log.warn("Rejected putting buffer for uid:{}. {}", uid, ringBuffer);
+        LOGGER.warn("Rejected putting buffer for uid:{}. {}", uid, ringBuffer);
     }
 
     /**
      * Policy for {@link RejectedTakeBufferHandler}, throws {@link RuntimeException} after logging
      */
     protected void exceptionRejectedTakeBuffer(RingBuffer ringBuffer) {
-        log.warn("Rejected take buffer. {}", ringBuffer);
+        LOGGER.warn("Rejected take buffer. {}", ringBuffer);
         throw new RuntimeException("Rejected take buffer. " + ringBuffer);
     }
 

@@ -2,15 +2,16 @@ package com.yahh.uid.buffer;
 
 import com.yahh.uid.utils.NamingThreadFactory;
 import com.yahh.uid.utils.PaddedAtomicLong;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
-import java.rmi.Naming;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author 邹磊
@@ -18,8 +19,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @description:
  * @date 2021/3/21 20:49
  */
-@Slf4j
 public class BufferPaddingExecutor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BufferPaddingExecutor.class);
 
     /**
      * 线程名称
@@ -64,6 +65,11 @@ public class BufferPaddingExecutor {
     private long scheduleInterval = DEFAULT_SCHEDULE_INTERVAL;
 
 
+    public BufferPaddingExecutor(RingBuffer ringBuffer, BufferedUidProvider bufferedUidProvider) {
+        this(ringBuffer,bufferedUidProvider,true);
+    }
+
+
     public BufferPaddingExecutor(RingBuffer ringBuffer, BufferedUidProvider bufferedUidProvider, Boolean usingSchedule) {
         this.running = new AtomicBoolean(false);
         this.lastSecond = new PaddedAtomicLong(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
@@ -90,37 +96,74 @@ public class BufferPaddingExecutor {
 
     public void paddingBuffer(){
 
-        log.info("Ready to padding buffer lastSecond:{}. {}",lastSecond.get(),ringBuffer);
+        LOGGER.info("Ready to padding buffer lastSecond:{}. {}",lastSecond.get(),ringBuffer);
 
         //校验是否正在填充中
         if (!running.compareAndSet(false,true)){
-            log.info("Padding buffer is still running. {}",ringBuffer);
+            LOGGER.info("Padding buffer is still running. {}",ringBuffer);
             return;
         }
 
+        boolean isFullRingBuffer = false;
 
+        while (!isFullRingBuffer) {
+            List<Long> uidList = bufferedUidProvider.proide(lastSecond.incrementAndGet());
+            for (Long uid : uidList) {
+                isFullRingBuffer = !ringBuffer.put(uid);
+                if (isFullRingBuffer) {
+                    break;
+                }
+            }
+        }
 
+        // 填充结束
+        running.compareAndSet(true, false);
+        LOGGER.info("End to padding buffer lastSecond:{}. {}", lastSecond.get(), ringBuffer);
 
     }
 
 
-    public void shutDown(){
-        if (!bufferPadExecutors.isShutdown()){
+    /**
+     * 启用一个定时线程进行填充
+     */
+    public void start() {
+        if (null != bufferPadSchedule) {
+            bufferPadSchedule.scheduleWithFixedDelay(() -> paddingBuffer(), scheduleInterval, scheduleInterval, TimeUnit.SECONDS);
+        }
+    }
+
+
+    /**
+     * 通过线程池异步填充slot
+     */
+    public void asyncPadding() {
+        bufferPadExecutors.submit(this::paddingBuffer);
+    }
+
+    /**
+     * 关闭线程池
+     */
+    public void shutdown() {
+        if (!bufferPadExecutors.isShutdown()) {
             bufferPadExecutors.shutdown();
         }
-
-        if (bufferPadSchedule != null && !bufferPadSchedule.isShutdown()){
+        if (null != bufferPadSchedule && !bufferPadSchedule.isShutdown()) {
             bufferPadSchedule.shutdown();
         }
     }
-
 
     public boolean isRunning(){
         return running.get();
     }
 
 
-
+    /**
+     * Setters
+     */
+    public void setScheduleInterval(long scheduleInterval) {
+        Assert.isTrue(scheduleInterval > 0, "Schedule interval must positive!");
+        this.scheduleInterval = scheduleInterval;
+    }
 
 
 

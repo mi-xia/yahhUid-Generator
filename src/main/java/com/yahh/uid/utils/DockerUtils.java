@@ -15,6 +15,7 @@
  */
 package com.yahh.uid.utils;
 
+import com.yahh.uid.worker.DisposableWorkerIdAssigner;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -26,8 +27,8 @@ import org.slf4j.LoggerFactory;
  * @description:
  * @date 2021/3/14 17:42
  */
-@Slf4j
 public abstract class DockerUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DockerUtils.class);
 
     /** 环境变量参数 */
     private static final String ENV_KEY_HOST = "JPAAS_HOST";
@@ -88,7 +89,7 @@ public abstract class DockerUtils {
             IS_DOCKER = false;
 
         } else {
-            log.error("Missing host or port from env for Docker. host:{}, port:{}", DOCKER_HOST, DOCKER_PORT);
+            LOGGER.error("Missing host or port from env for Docker. host:{}, port:{}", DOCKER_HOST, DOCKER_PORT);
             throw new RuntimeException(
                     "Missing host or port from env for Docker. host:" + DOCKER_HOST + ", port:" + DOCKER_PORT);
         }
