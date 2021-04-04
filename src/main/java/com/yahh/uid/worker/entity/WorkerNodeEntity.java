@@ -31,6 +31,11 @@ public class WorkerNodeEntity {
     private int type;
 
     /**
+     * Worker launch date, default now
+     */
+    private Date launchDate = new Date();
+
+    /**
      * Created time
      */
     private Date created;
@@ -70,6 +75,14 @@ public class WorkerNodeEntity {
 
     public void setType(int type) {
         this.type = type;
+    }
+
+    public Date getLaunchDate() {
+        return launchDate;
+    }
+
+    public void setLaunchDateDate(Date launchDate) {
+        this.launchDate = launchDate;
     }
 
     public Date getCreated() {

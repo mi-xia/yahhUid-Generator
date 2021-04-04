@@ -78,7 +78,7 @@ public class CachedUidGenerator extends DefaultUidGenerator implements Disposabl
      */
     private void initRingbuffer() {
         // 初始化bufferSize
-        int bufferSize = ((int) bitsAllocator.getMaxSequence() + 1) >> boostPower;
+        int bufferSize = ((int) bitsAllocator.getMaxSequence() + 1) << boostPower;
         this.ringBuffer = new RingBuffer(bufferSize,paddingFactor);
         LOGGER.info("Initialized ring buffer size:{}, paddingFactor:{}", bufferSize, paddingFactor);
 
